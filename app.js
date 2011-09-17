@@ -4,6 +4,8 @@ var kue = require('kue'),
     util = require('util'),
     redis = require('redis');
 
+var isVCAP = (process.env.VCAP_APP_HOST)?true:false;
+
 var port = Number(process.env.VCAP_APP_PORT || 3000),
     host = process.env.VCAP_APP_HOST || 'localhost';
 
@@ -51,16 +53,21 @@ function create() {
   });
 
   job.on('complete', function(){
-      console.log(" Job complete");
+      console.log(" Job  #" + job.id + " complete          "); //blank out rest
+      //console.log(" Job complete");
   }).on('failed', function(){
-      console.log(" Job failed");
+      console.log(" Job  #" + job.id + " failed            "); //blank out rest
   }).on('progress', function(progress){
-    process.stdout.write('\r  job #' + job.id + ' ' + progress + '% complete');
+    if (isVCAP){
+        // no progress output on vcap
+    } else {
+        process.stdout.write('\r  job #' + job.id + ' ' + progress + '% complete\r');
+    }
   });
 
   job.save();
 
-  //setTimeout(create, Math.random() * 2000 | 0);
+  setTimeout(create, Math.random() * 20000 | 0);
 }
 
 create();
@@ -85,10 +92,11 @@ jobs.process('video conversion', 1, function(job, done){
 });
 
 function convertFrame(i, fn) {
-  setTimeout(fn, Math.random() * 50);
+  setTimeout(fn, Math.random() * 500);
 }
 
 // start the UI
 kue.app.listen(port, host);
- 
+
+console.log('process.env: '+util.inspect(process.env, false, null)+'\n\n');
 console.log('Kue Server running at http://' + host + ':' + port + '/');
