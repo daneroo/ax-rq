@@ -1,9 +1,10 @@
 {
-  "name":"simple",
+  "name":"ax-rq",
   "version":"0.0.1",
   "dependencies":{
       "cloudfoundry":"",
-      "kue":""
+      "kue":"",
+      "redis":""
   }
 
 }

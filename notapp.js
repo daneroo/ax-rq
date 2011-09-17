@@ -1,6 +1,36 @@
 
-var kue = require('kue');
+var kue = require('kue'),
+    redis = require('redis'),
+    util = require('util'),
+    redis = require('redis');
 
+var port = Number(process.env.VCAP_APP_PORT || 3000),
+    host = process.env.VCAP_APP_HOST || 'localhost';
+
+var cf = require("cloudfoundry");
+var redisSvc = cf.redis["ax-rq-redis"]||{"credentials":{ 
+     host: '127.0.0.1',
+     port: 6380
+     }};
+
+var cred = redisSvc.credentials;
+var onlyOnce=true;
+
+kue.redis.createClient = function() {
+    var client = redis.createClient(cred.port, cred.host);
+    if (cred.password) {
+        client.auth(cred.password);
+    }
+    client.on('connect',function() {
+        if (onlyOnce) console.log('redis connected @ '+new Date());
+    }).on('ready',function() {
+        if (onlyOnce) console.log('redis ready version: '+client.server_info.redis_version);
+        onlyOnce=false;
+    }).on('error',function() {
+        console.log('redis could not connect');
+    });
+    return client;
+  };
 // create our job queue
 
 var jobs = kue.createQueue();
@@ -59,5 +89,6 @@ function convertFrame(i, fn) {
 }
 
 // start the UI
-kue.app.listen(3000);
-console.log('UI started on port 3000');
+kue.app.listen(port, host);
+ 
+console.log('Kue Server running at http://' + host + ':' + port + '/');
